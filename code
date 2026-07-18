@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>るーぷ・みゅーじっく（アイコン対応版）</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        body { margin: 0; padding: 0; background: #121214; color: #fff; font-family: sans-serif; overflow: hidden; touch-action: none; }
+        
+        #start-screen { position: fixed; top:0; left:0; width:100vw; height:100vh; background: #121214; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        .btn { background: #4ecca3; color: #121214; border: none; padding: 20px 40px; font-size: 24px; border-radius: 50px; cursor: pointer; font-weight: bold; margin: 10px; box-shadow: 0 5px 15px rgba(78,204,163,0.3); width: 85%; max-width: 400px; text-align: center; }
+        
+        #mode-selection, #room-gate-student, #mode-teacher, #mode-student-inst-select { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; text-align: center; position: absolute; top: 0; left: 0; width: 100vw; }
+        .input-box { width: 100%; max-width: 300px; padding: 15px; font-size: 24px; text-align: center; border-radius: 12px; border: 3px solid #4ecca3; background: #2d2d35; color: white; margin-bottom: 15px; font-weight: bold; }
+        
+        /* 🦊 キャラクターアイコン選択のスタイル */
+        .avatar-row { display: flex; gap: 15px; margin-bottom: 20px; justify-content: center; }
+        .avatar-btn { font-size: 40px; background: #2d2d35; border: 3px solid transparent; border-radius: 50%; width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+        .avatar-btn.active { border-color: #4ecca3; background: #3e3e4a; transform: scale(1.1); }
+
+        .control-bar { position: fixed; top: 0; left: 0; width: 100%; background: #1f1f23; display: flex; flex-direction: column; padding: 12px 20px; gap: 10px; z-index: 10; border-bottom: 2px solid #2d2d35; }
+        .row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .nav-btn { background: #3a3a40; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 8px; font-weight: bold; }
+        .clear-btn { background: #e94560; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 8px; font-weight: bold; }
+        
+        #beat-indicator { display: flex; gap: 5px; justify-content: center; width: 60%; }
+        .beat-dot { width: 12px; height: 12px; background: #3a3a40; border-radius: 50%; transition: background-color 0.05s; }
+        .beat-dot.active { background: #4ecca3; transform: scale(1.3); }
+        .beat-dot.recorded { background: #e94560; }
+
+        .inst-row { display: flex; gap: 10px; margin-bottom: 25px; justify-content: center; width: 100%; }
+        .inst-btn { background: #3a3a40; color: white; border: none; padding: 12px 20px; font-size: 18px; border-radius: 12px; cursor: pointer; font-weight: bold; }
+        .inst-btn.active { background: #4ecca3; color: #121214; }
+
+        .mode-container { display: none; width: 100vw; height: 100vh; position: relative; padding-top: 150px; }
+        #mode-switch { background: #1a1c23; }
+        #switch-pad { width: 85%; height: 60vh; margin: 10px auto; background: #e94560; border-radius: 40px; display: flex; justify-content: center; align-items: center; font-size: 45px; font-weight: bold; box-shadow: 0 12px 0 #b33046; }
+        #switch-pad:active { transform: translateY(8px); box-shadow: 0 4px 0 #b33046; }
+        #mode-trace { background: #161920; }
+        #trace-area { width: 90%; height: 60vh; margin: 10px auto; background: #222633; border: 4px dashed #4ecca3; border-radius: 20px; display: flex; justify-content: center; align-items: center; font-size: 26px; color: #6c7a9c; text-align: center; padding: 20px; }
+        
+        #mode-teacher { background: #121214; overflow-y: auto; padding-top: 140px; display: none; }
+        .student-list { width: 100%; max-width: 500px; margin: 20px auto; display: flex; flex-direction: column; gap: 10px; }
+        .student-card { background: #2d2d35; padding: 15px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 6px solid #4ecca3; }
+        .delete-member-btn { background: #e94560; border: none; color: white; border-radius: 6px; padding: 5px 12px; font-size: 16px; font-weight: bold; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDemoKeyForLoopMusic123456789",
+            authDomain: "loop-music-demo.firebaseapp.com",
+            databaseURL: "https://loop-music-demo-default-rtdb.firebaseio.com",
+            projectId: "loop-music-demo"
+        };
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        window.scale = ["C3", "D3", "E3", "G3", "A3", "C4", "D4", "E4", "G4", "A4"];
+        window.currentInstrument = 'drum';
+        window.currentRole = ''; 
+        window.roomCode = '';
+        window.studentName = '';
+        window.selectedAvatar = '🐶'; // 初期アイコン
+        
+        let drum, pianoSampler, bellSampler;
+        let isInitialized = false;
+        let activeStep = 0;
+
+        window.mySwitchLoop = Array(16).fill(false);
+        window.myTraceLoop = Array(16).fill(null);
+        window.allStudentsData = {};
+
+        window.initAudio = function() {
+            if (isInitialized) return;
+            Tone.start();
+            Tone.Transport.bpm.value = 90;
+
+            drum = new Tone.MembraneSynth({ volume: +6 }).toDestination();
+
+            pianoSampler = new Tone.Sampler({
+                urls: { C3: "C3.mp3", C4: "C4.mp3", A4: "A4.mp3" },
+                baseUrl: "https://tonejs.github.io/audio/salamander/",
+                onload: () => console.log("piano ready")
+            }).toDestination();
+
+            bellSampler = new Tone.Sampler({
+                urls: { C4: "glockenspiel-c4.mp3", C5: "glockenspiel-c5.mp3" },
+                baseUrl: "https://tonejs.github.io/audio/casio/",
+                onload: () => console.log("bell ready")
+            }).toDestination();
+
+            Tone.Transport.scheduleRepeat((time) => {
+                let step = activeStep;
+                
+                Tone.Draw.schedule(() => {
+                    const dots = document.querySelectorAll('.beat-dot');
+                    dots.forEach((dot, idx) => {
+                        dot.classList.remove('active');
+                        if (idx === step) dot.classList.add('active');
+                        
+                        if (window.currentRole === 'student') {
+                            if (window.mySwitchLoop[idx] || window.myTraceLoop[idx]) dot.classList.add('recorded');
+                            else dot.classList.remove('recorded');
+                        }
+                    });
+                }, time);
+
+                if (window.currentRole === 'student') {
+                    if (window.mySwitchLoop[step]) drum.triggerAttackRelease("C2", "8n", time);
+                    if (window.myTraceLoop[step]) {
+                        if (window.currentInstrument === 'piano') pianoSampler.triggerAttackRelease(window.myTraceLoop[step], "16n", time);
+                        else if (window.currentInstrument === 'bell') bellSampler.triggerAttackRelease(window.myTraceLoop[step], "16n", time);
+                        else drum.triggerAttackRelease(window.myTraceLoop[step], "16n", time);
+                    }
+                } else if (window.currentRole === 'teacher') {
+                    Object.values(window.allStudentsData).forEach(student => {
+                        if (student.switchLoop && student.switchLoop[step]) {
+                            drum.triggerAttackRelease("C2", "8n", time);
+                        }
+                        if (student.traceLoop && student.traceLoop[step]) {
+                            if (student.instrument === 'piano') pianoSampler.triggerAttackRelease(student.traceLoop[step], "16n", time);
+                            else if (student.instrument === 'bell') bellSampler.triggerAttackRelease(student.traceLoop[step], "16n", time);
+                            else drum.triggerAttackRelease(student.traceLoop[step], "16n", time);
+                        }
+                    });
+                }
+
+                activeStep = (activeStep + 1) % 16;
+            }, "16n");
+
+            Tone.Transport.start();
+            document.getElementById("start-screen").style.display = "none";
+            document.getElementById("mode-selection").style.display = "flex";
+            isInitialized = true;
+        };
+
+        window.setupTeacherRoom = function() {
+            const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+            window.roomCode = code;
+            window.currentRole = 'teacher';
+
+            document.getElementById("mode-selection").style.display = "none";
+            document.getElementById("mode-teacher").style.display = "flex";
+            document.getElementById("global-controls").style.display = "flex";
+            document.getElementById("clear-btn").style.display = "none";
+            document.getElementById("room-title-text").innerHTML = `先生モニター <span style="color:#4ecca3; font-size:24px; margin-left:15px;">コード: ${code}</span>`;
+
+            const roomRef = ref(database, `rooms/${code}/students`);
+            onValue(roomRef, (snapshot) => {
+                window.allStudentsData = snapshot.exists() ? snapshot.val() : {};
+                updateTeacherUI();
+            });
+        };
+
+        window.joinStudentRoom = function() {
+            const codeInput = document.getElementById("student-code-input").value.toUpperCase();
+            const nameInput = document.getElementById("student-name-input").value.trim();
+            if (!codeInput || !nameInput) { alert("コードとなまえを いれてね！"); return; }
+
+            window.roomCode = codeInput;
+            window.studentName = nameInput;
+            window.currentRole = 'student';
+
+            document.getElementById("room-gate-student").style.display = "none";
+            document.getElementById("global-controls").style.display = "flex";
+            document.getElementById("room-title-text").innerHTML = `${window.selectedAvatar} ${nameInput}さんの楽器`;
+            
+            window.showInstrumentSelect();
+        };
+
+        window.syncLoopToFirebase = function() {
+            if (window.currentRole !== 'student' || !window.roomCode) return;
+            const myRef = ref(database, `rooms/${window.roomCode}/students/${window.studentName}`);
+            set(myRef, {
+                studentName: window.studentName,
+                avatar: window.selectedAvatar, // 🦊 アイコンデータも一緒に送信
+                instrument: window.currentInstrument,
+                switchLoop: window.mySwitchLoop,
+                traceLoop: window.myTraceLoop
+            });
+        };
+
+        window.removeStudent = function(name) {
+            const studentRef = ref(database, `rooms/${window.roomCode}/students/${name}`);
+            remove(studentRef);
+        };
+
+        window.recordSwitchSound = function(e) {
+            e.preventDefault();
+            drum.triggerAttackRelease("C2", "8n");
+            window.mySwitchLoop[activeStep] = true;
+            window.syncLoopToFirebase();
+        };
+
+        window.recordTraceSound = function(note) {
+            if (window.currentInstrument === 'piano') pianoSampler.triggerAttackRelease(note, "16n");
+            else if (window.currentInstrument === 'bell') bellSampler.triggerAttackRelease(note, "16n");
+            else drum.triggerAttackRelease("C2", "16n");
+
+            window.myTraceLoop[activeStep] = note;
+            window.syncLoopToFirebase();
+        };
+    </script>
+</head>
+<body>
+
+    <div class="control-bar" id="global-controls" style="display: none;">
+        <div class="row">
+            <button class="nav-btn" onclick="handleBackOrClose()">🔙 もどる</button>
+            <div id="beat-indicator">
+                <div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div>
+                <div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div>
+                <div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div>
+                <div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div>
+            </div>
+            <button class="clear-btn" id="clear-btn" onclick="clearCurrentLoop()">↩️ おとをけす</button>
+        </div>
+        <div class="row" style="justify-content: center; font-weight: bold; font-size: 14px;" id="room-title-text">
+            えんそう中
+        </div>
+    </div>
+
+    <div id="start-screen">
+        <h1 style="font-size: 34px; text-align: center; margin-bottom: 5px; color:#4ecca3;">るーぷ・みゅーじっく</h1>
+        <p style="color: #888; margin-bottom: 40px;">〜 キャラクター選択つき 〜</p>
+        <button class="btn" onclick="initAudio()">あぷりを はじめる</button>
+    </div>
+
+    <div id="mode-selection">
+        <h2 style="margin-bottom: 30px;">どちらを 開きますか？</h2>
+        <button class="btn" style="background:#4ecca3; color:#121214;" onclick="setupTeacherRoom()">👨‍🏫 先生用（みんなの音をあつめる）</button>
+        <button class="btn" style="background:#e94560; color:#fff;" onclick="showStudentGate()">👶 子ども用（がっきをえんそくする）</button>
+    </div>
+
+    <!-- 🦊 子ども用ログイン画面（キャラクター選択を追加） -->
+    <div id="room-gate-student">
+        <h2>ルームに さんかする</h2>
+        <input type="text" id="student-code-input" class="input-box" placeholder="コードをいれてね" maxLength="6">
+        <input type="text" id="student-name-input" class="input-box" placeholder="なまえをいれてね">
+        
+        <p style="margin: 5px 0 10px 0; color: #aaa; font-weight: bold;">好きなアイコンをえらんでね</p>
+        <div class="avatar-row">
+            <button class="avatar-btn active" onclick="selectAvatar(this, '🐶')">🐶</button>
+            <button class="avatar-btn" onclick="selectAvatar(this, '🐱')">🐱</button>
+            <button class="avatar-btn" onclick="selectAvatar(this, '🐰')">🐰</button>
+            <button class="avatar-btn" onclick="selectAvatar(this, '🐻')">🐻</button>
+        </div>
+
+        <button class="btn" style="background:#4ecca3; color:#121214;" onclick="joinStudentRoom()">✨ さんかする</button>
+        <button class="btn" style="background:#3a3a40; color:#fff; font-size:18px;" onclick="location.reload()">🔙 もどる</button>
+    </div>
+
+    <div id="mode-teacher">
+        <h3 style="text-align: center; color: #aaa; margin-bottom: 10px;">えんそう中のこどもたち</h3>
+        <div id="teacher-student-list" class="student-list">
+            <div style="color:#666; padding:40px;">こどもたちが参加するのを待っています...</div>
+        </div>
+    </div>
+
+    <div id="mode-student-inst-select">
+        <h2 style="margin-bottom: 30px;">どのがっきの おとにしますか？</h2>
+        <div class="inst-row">
+            <button id="bi-drum" class="inst-btn active" onclick="changeInstrument('drum')">🥁 たいこ</button>
+            <button id="bi-piano" class="inst-btn" onclick="changeInstrument('piano')">🎹 ピアノ</button>
+            <button id="bi-bell" class="inst-btn" onclick="changeInstrument('bell')">🔔 かね</button>
+        </div>
+        <h2 style="margin-bottom: 20px;">どうやって えんそくする？</h2>
+        <button class="btn" style="background:#e94560;" onclick="startPlayMode('switch')">🔴 スイッチ（ドン・ドン）</button>
+        <button class="btn" style="background:#00adb5;" onclick="startPlayMode('trace')">✨ なぞる（きらきら）</button>
+    </div>
+
+    <div id="mode-switch" class="mode-container">
+        <div id="switch-pad" onpointerdown="recordSwitchSound(event)">ここを おす！</div>
+    </div>
+
+    <div id="mode-trace" class="mode-container">
+        <div id="trace-area">がめんを ゆびで なぞってみてね ✨</div>
+    </div>
+
+    <script>
+        // 🦊 アイコン選択のUI制御
+        function selectAvatar(element, avatar) {
+            document.querySelectorAll('.avatar-btn').forEach(b => b.classList.remove('active'));
+            element.classList.add('active');
+            window.selectedAvatar = avatar;
+        }
+
+        function showStudentGate() {
+            document.getElementById("mode-selection").style.display = "none";
+            document.getElementById("room-gate-student").style.display = "flex";
+        }
+        function showInstrumentSelect() {
+            document.querySelectorAll('.mode-container').forEach(c => c.style.display = 'none');
+            document.getElementById("mode-teacher").style.display = "none";
+            document.getElementById("mode-student-inst-select").style.display = "flex";
+            document.getElementById("clear-btn").style.display = "none";
+        }
+        function changeInstrument(inst) {
+            window.currentInstrument = inst;
+            document.querySelectorAll('.inst-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`bi-${inst}`).classList.add('active');
+            if(window.syncLoopToFirebase) window.syncLoopToFirebase();
+        }
+        function startPlayMode(playMode) {
+            document.getElementById("mode-student-inst-select").style.display = "none";
+            document.getElementById("clear-btn").style.display = "block";
+            if (playMode === 'switch') {
+                document.getElementById("mode-switch").style.display = "block";
+            } else {
+                document.getElementById("mode-trace").style.display = "block";
+                setupTraceInput();
+            }
+        }
+        function clearCurrentLoop() {
+            window.mySwitchLoop.fill(false);
+            window.myTraceLoop.fill(null);
+            if(window.syncLoopToFirebase) window.syncLoopToFirebase();
+        }
+        function handleBackOrClose() {
+            if (window.currentRole === 'teacher') {
+                if(confirm("ルームを終了しますか？")) { location.reload(); }
+            } else {
+                showInstrumentSelect();
+            }
+        }
+        function setupTraceInput() {
+            const area = document.getElementById("trace-area");
+            let onTrace = (e) => {
+                let pointer = e.touches ? e.touches[0] : e;
+                if (!pointer) return;
+                let percentX = pointer.clientX / window.innerWidth;
+                let noteIndex = Math.floor(percentX * window.scale.length);
+                noteIndex = Math.max(0, Math.min(noteIndex, window.scale.length - 1));
+                window.recordTraceSound(window.scale[noteIndex]);
+            };
+            area.onpointerdown = (e) => { e.preventDefault(); onTrace(e); };
+            area.onpointermove = (e) => { if(e.buttons > 0 || e.touches) { e.preventDefault(); onTrace(e); } };
+        }
+        // 🦊 先生の画面にアイコンを大きく表示する処理
+        function updateTeacherUI() {
+            const listEl = document.getElementById("teacher-student-list");
+            listEl.innerHTML = "";
+            const keys = Object.keys(window.allStudentsData);
+            if(keys.length === 0) {
+                listEl.innerHTML = `<div style="color:#666; padding:40px;">こどもたちが参加するのを待っています...</div>`;
+                return;
+            }
+            keys.forEach(k => {
+                const s = window.allStudentsData[k];
+                const card = document.createElement("div");
+                card.className = "student-card";
+                let instName = s.instrument === 'drum' ? '🥁 たいこ' : s.instrument === 'piano' ? '🎹 ピアノ' : '🔔 かね';
+                let avatar = s.avatar ? s.avatar : '🐶'; // 万が一ない場合のフォールバック
+                card.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:15px; text-align:left;">
+                        <div style="font-size:35px;">${avatar}</div>
+                        <div>
+                            <div style="font-weight:bold; font-size:18px;">${s.studentName} さん</div>
+                            <div style="color:#4ecca3; font-size:14px; margin-top:2px;">えんそく中：${instName}</div>
+                        </div>
+                    </div>
+                    <button class="delete-member-btn" onclick="window.removeStudent('${s.studentName}')">✕ けす</button>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
