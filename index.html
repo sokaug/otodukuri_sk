@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>るーぷ・みゅーじっく（バグ修正版）</title>
+    <title>るーぷ・みゅーじっく（リアル生音源版）</title>
     <style>
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body { margin: 0; padding: 0; background: #121214; color: #fff; font-family: sans-serif; overflow: hidden; touch-action: none; }
@@ -14,17 +14,21 @@
         #mode-selection, #room-gate-student, #mode-teacher, #mode-student-inst-select { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; text-align: center; position: absolute; top: 0; left: 0; width: 100vw; }
         .input-box { width: 100%; max-width: 300px; padding: 15px; font-size: 24px; text-align: center; border-radius: 12px; border: 3px solid #4ecca3; background: #2d2d35; color: white; margin-bottom: 15px; font-weight: bold; }
         
-        .avatar-row { display: flex; gap: 15px; margin-bottom: 20px; justify-content: center; }
-        .avatar-btn { font-size: 40px; background: #2d2d35; border: 3px solid transparent; border-radius: 50%; width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+        .avatar-row { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+        .avatar-btn { font-size: 32px; background: #2d2d35; border: 3px solid transparent; border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
         .avatar-btn.active { border-color: #4ecca3; background: #3e3e4a; transform: scale(1.1); }
 
-        .control-bar { position: fixed; top: 0; left: 0; width: 100%; background: #1f1f23; display: flex; flex-direction: column; padding: 12px 20px; gap: 10px; z-index: 10; border-bottom: 2px solid #2d2d35; }
-        .row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .nav-btn { background: #3a3a40; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 8px; font-weight: bold; }
-        .clear-btn { background: #e94560; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 8px; font-weight: bold; }
+        .control-bar { position: fixed; top: 0; left: 0; width: 100%; background: #1f1f23; display: flex; flex-direction: column; padding: 8px 12px; gap: 6px; z-index: 10; border-bottom: 2px solid #2d2d35; }
+        .row { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 6px; }
         
-        #beat-indicator { display: flex; gap: 5px; justify-content: center; width: 60%; }
-        .beat-dot { width: 12px; height: 12px; background: #3a3a40; border-radius: 50%; transition: background-color 0.05s; }
+        .nav-btn { background: #3a3a40; color: white; border: none; padding: 8px 12px; font-size: 13px; border-radius: 8px; font-weight: bold; flex-shrink: 0; }
+        .clear-btn { background: #e94560; color: white; border: none; padding: 8px 12px; font-size: 13px; border-radius: 8px; font-weight: bold; flex-shrink: 0; }
+        
+        .submit-btn-fixed { background: #fbd46d; color: #121214; border: none; padding: 10px 14px; font-size: 14px; border-radius: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(251,212,109,0.3); display: none; flex-shrink: 0; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
+        #beat-indicator { display: flex; gap: 3px; justify-content: center; flex-grow: 1; min-width: 0; padding: 0 4px; }
+        .beat-dot { width: 8px; height: 8px; background: #3a3a40; border-radius: 50%; transition: background-color 0.05s; flex-shrink: 1; }
         .beat-dot.active { background: #4ecca3; transform: scale(1.3); }
         .beat-dot.recorded { background: #e94560; }
 
@@ -32,27 +36,29 @@
         .inst-btn { background: #3a3a40; color: white; border: none; padding: 12px 20px; font-size: 18px; border-radius: 12px; cursor: pointer; font-weight: bold; }
         .inst-btn.active { background: #4ecca3; color: #121214; }
 
-        .mode-container { display: none; width: 100vw; height: 100vh; position: relative; padding-top: 150px; }
+        .mode-container { display: none; width: 100vw; height: 100vh; position: relative; padding-top: 130px; }
         #mode-switch { background: #1a1c23; }
-        #switch-pad { width: 85%; height: 60vh; margin: 10px auto; background: #e94560; border-radius: 40px; display: flex; justify-content: center; align-items: center; font-size: 45px; font-weight: bold; box-shadow: 0 12px 0 #b33046; }
-        #switch-pad:active { transform: translateY(8px); box-shadow: 0 4px 0 #b33046; }
+        #switch-pad { width: 85%; height: 65vh; margin: 5px auto; background: #e94560; border-radius: 40px; display: flex; justify-content: center; align-items: center; font-size: 40px; font-weight: bold; box-shadow: 0 10px 0 #b33046; }
+        #switch-pad:active { transform: translateY(6px); box-shadow: 0 4px 0 #b33046; }
         #mode-trace { background: #161920; }
-        #trace-area { width: 90%; height: 60vh; margin: 10px auto; background: #222633; border: 4px dashed #4ecca3; border-radius: 20px; display: flex; justify-content: center; align-items: center; font-size: 26px; color: #6c7a9c; text-align: center; padding: 20px; }
+        #trace-area { width: 90%; height: 65vh; margin: 5px auto; background: #222633; border: 4px dashed #4ecca3; border-radius: 20px; display: flex; justify-content: center; align-items: center; font-size: 22px; color: #6c7a9c; text-align: center; padding: 15px; }
         
-        #mode-teacher { background: #121214; display: none; flex-direction: column; justify-content: flex-start; align-items: center; height: 100vh; padding-top: 130px; }
-        .stage-container { width: 95%; max-width: 900px; height: 65vh; background: #1e1e24; border-radius: 24px; border: 3px solid #3a3a40; position: relative; overflow: hidden; margin-top: 10px; display: flex; justify-content: space-around; align-items: center; padding: 20px; }
+        #mode-teacher { background: #121214; display: none; flex-direction: column; justify-content: flex-start; align-items: center; height: 100vh; padding-top: 120px; }
+        .stage-container { width: 95%; max-width: 900px; height: 68vh; background: #1e1e24; border-radius: 24px; border: 3px solid #3a3a40; position: relative; overflow-y: auto; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 20px; padding: 20px; }
         
-        .concert-card { display: flex; flex-direction: column; align-items: center; width: 140px; position: relative; transition: transform 0.1s ease-out; }
-        .concert-avatar { font-size: 65px; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5)); transition: transform 0.05s ease-out; }
-        .concert-name { font-weight: bold; font-size: 14px; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 20px; margin-top: 8px; border: 1px solid #4ecca3; text-align: center; white-space: nowrap; }
-        .concert-inst { font-size: 11px; color: #aaa; margin-top: 2px; }
+        .concert-card { display: flex; flex-direction: column; align-items: center; width: 110px; position: relative; transition: transform 0.1s ease-out; }
+        .concert-avatar { font-size: 50px; filter: drop-shadow(0 8px 8px rgba(0,0,0,0.5)); transition: transform 0.05s ease-out; }
+        .concert-name { font-weight: bold; font-size: 12px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 20px; margin-top: 6px; border: 1px solid #4ecca3; text-align: center; white-space: nowrap; }
+        .concert-inst { font-size: 10px; color: #aaa; margin-top: 2px; }
     </style>
+    <!-- 音響コアライブラリ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 </head>
 <body>
 
     <div class="control-bar" id="global-controls" style="display: none;">
         <div class="row">
+            <button class="submit-btn-fixed" id="submit-btn" onclick="submitLoopToTeacher()">📤 せんせいにおくる</button>
             <button class="nav-btn" id="back-nav-btn" onclick="handleBackOrClose()">🔙 もどる</button>
             <div id="beat-indicator">
                 <div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div>
@@ -60,33 +66,31 @@
                 <div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div>
                 <div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div>
             </div>
-            <button class="clear-btn" id="clear-btn" onclick="clearCurrentLoop()">↩️ やりなおす</button>
-            <!-- 🛠️ 確実に表示されるよう配置を整理した提出ボタン -->
-            <button class="nav-btn" id="submit-btn" style="background: #4ecca3; color: #121214; display: none;" onclick="submitLoopToTeacher()">📤 先生におくる</button>
+            <button class="clear-btn" id="clear-btn" onclick="clearCurrentLoop()">↩️ けす</button>
         </div>
-        <div class="row" style="justify-content: center; font-weight: bold; font-size: 14px;" id="room-title-text">
+        <div class="row" style="justify-content: center; font-weight: bold; font-size: 12px;" id="room-title-text">
             えんそく中
         </div>
     </div>
 
     <div id="start-screen">
-        <h1 style="font-size: 34px; text-align: center; margin-bottom: 5px; color:#4ecca3;">るーぷ・みゅーじっく</h1>
-        <p style="color: #888; margin-bottom: 40px;">〜 設定不要・合奏シアター 〜</p>
+        <h1 style="font-size: 30px; text-align: center; margin-bottom: 5px; color:#4ecca3;">るーぷ・みゅーじっく</h1>
+        <p style="color: #888; margin-bottom: 40px;">〜 完全リアル生音源シアター 〜</p>
         <button class="btn" onclick="initAudio()">あぷりを はじめる</button>
     </div>
 
     <div id="mode-selection">
-        <h2 style="margin-bottom: 30px;">どちらを 開きますか？</h2>
+        <h2 style="margin-bottom: 30px; font-size: 22px;">どちらを 開きますか？</h2>
         <button class="btn" style="background:#4ecca3; color:#121214;" onclick="setupTeacherRoom()">👨‍🏫 先生用（みんなの演奏を合奏する）</button>
         <button class="btn" style="background:#e94560; color:#fff;" onclick="showStudentGate()">👶 子ども用（がっきをつくる）</button>
     </div>
 
     <div id="room-gate-student">
-        <h2>ルームに さんかする</h2>
+        <h2 style="font-size: 22px;">ルームに さんかする</h2>
         <input type="text" id="student-code-input" class="input-box" placeholder="コードをいれてね" maxLength="6">
         <input type="text" id="student-name-input" class="input-box" placeholder="なまえをいれてね">
         
-        <p style="margin: 5px 0 10px 0; color: #aaa; font-weight: bold;">好きなキャラクターをえらんでね</p>
+        <p style="margin: 5px 0 10px 0; color: #aaa; font-weight: bold; font-size: 14px;">好きなキャラクターをえらんでね</p>
         <div class="avatar-row">
             <button class="avatar-btn active" onclick="selectAvatar(this, '🐶')">🐶</button>
             <button class="avatar-btn" onclick="selectAvatar(this, '🐱')">🐱</button>
@@ -99,21 +103,21 @@
     </div>
 
     <div id="mode-teacher">
-        <h2 style="margin: 0; color: #fff;">🎵 みんなで作ったループ合奏 🎵</h2>
+        <h2 style="margin: 0; color: #fff; font-size: 20px;">🎵 みんなで作ったループ合奏 🎵</h2>
         <div class="stage-container" id="theater-stage">
-            <div style="color:#666; padding:40px; font-size:20px;">子どもたちからの提出をまっています...</div>
+            <div style="color:#666; padding:40px; font-size:16px;">子どもたちからの提出をまっています...</div>
         </div>
-        <button class="btn" style="background:#e94560; color:#fff; margin-top:20px; font-size:16px; padding:10px 20px; width:200px;" onclick="if(confirm('全員の提出をリセットしますか？')){location.reload();}">🧹 演奏をクリアする</button>
+        <button class="btn" style="background:#e94560; color:#fff; margin-top:15px; font-size:14px; padding:10px 20px; width:180px;" onclick="if(confirm('全員の提出をリセットしますか？')){location.reload();}">🧹 演奏をクリアする</button>
     </div>
 
     <div id="mode-student-inst-select">
-        <h2>どのがっきの おとにしますか？</h2>
+        <h2 style="font-size: 20px;">どのがっきの おとにしますか？</h2>
         <div class="inst-row">
             <button id="bi-drum" class="inst-btn active" onclick="changeInstrument('drum')">🥁 たいこ</button>
             <button id="bi-piano" class="inst-btn" onclick="changeInstrument('piano')">🎹 ピアノ</button>
             <button id="bi-bell" class="inst-btn" onclick="changeInstrument('bell')">🔔 かね</button>
         </div>
-        <h2>どうやって えんそくする？</h2>
+        <h2 style="font-size: 20px;">どうやって えんそくする？</h2>
         <button class="btn" style="background:#e94560;" onclick="startPlayMode('switch')">🔴 スイッチ（音に合わせて弾む！）</button>
         <button class="btn" style="background:#00adb5;" onclick="startPlayMode('trace')">✨ なぞる（メロディに合わせて動く！）</button>
     </div>
@@ -135,7 +139,7 @@
         window.selectedAvatar = '🐶';
         window.selectedMode = 'switch';
 
-        let drum, pianoSampler, bellSampler, ws;
+        let drumSampler, pianoSampler, bellSampler, ws;
         let isInitialized = false;
         let activeStep = 0;
 
@@ -162,12 +166,23 @@
             Tone.start();
             Tone.Transport.bpm.value = 90;
 
-            drum = new Tone.MembraneSynth({ volume: +6 }).toDestination();
-            pianoSampler = new Tone.Sampler({
-                urls: { C3: "C3.mp3", C4: "C4.mp3" }, baseUrl: "https://tonejs.github.io/audio/salamander/"
+            // 🎵 全楽器をオープンな本物の生音オーディオファイル（サンプラー）に完全移行
+            drumSampler = new Tone.Sampler({
+                urls: { C2: "taiko.mp3", C3: "taiko.mp3" },
+                baseUrl: "https://philharmonia.co.uk/apps/sound-samples/audio/percussion/taiko/",
+                onload: () => console.log("Taiko loaded")
             }).toDestination();
+
+            pianoSampler = new Tone.Sampler({
+                urls: { C3: "C3.mp3", C4: "C4.mp3", A4: "A4.mp3" },
+                baseUrl: "https://tonejs.github.io/audio/salamander/",
+                onload: () => console.log("Piano loaded")
+            }).toDestination();
+
             bellSampler = new Tone.Sampler({
-                urls: { C4: "glockenspiel-c4.mp3" }, baseUrl: "https://tonejs.github.io/audio/casio/"
+                urls: { C4: "glockenspiel-c4.mp3", C5: "glockenspiel-c5.mp3" },
+                baseUrl: "https://tonejs.github.io/audio/casio/",
+                onload: () => console.log("Bell loaded")
             }).toDestination();
 
             Tone.Transport.scheduleRepeat((time) => {
@@ -190,14 +205,14 @@
                             if (!card || !avatarEl) return;
 
                             if (student.mode === 'switch' && student.switchLoop && student.switchLoop[step]) {
-                                avatarEl.style.transform = "scale(1.4) translateY(-30px)";
+                                avatarEl.style.transform = "scale(1.4) translateY(-25px)";
                                 card.style.borderColor = "#4ecca3";
                                 setTimeout(() => { avatarEl.style.transform = "scale(1) translateY(0px)"; card.style.borderColor = "transparent"; }, 150);
                             }
                             if (student.mode === 'trace' && student.traceLoop && student.traceLoop[step]) {
                                 const noteIdx = window.scale.indexOf(student.traceLoop[step]);
                                 if (noteIdx !== -1) {
-                                    const yOffset = (noteIdx - 5) * -12; 
+                                    const yOffset = (noteIdx - 5) * -10; 
                                     avatarEl.style.transform = `translateY(${yOffset}px) scale(1.1)`;
                                     setTimeout(() => avatarEl.style.transform = `translateY(${yOffset}px) scale(1)`, 100);
                                 }
@@ -206,18 +221,21 @@
                     }
                 }, time);
 
+                // 各ステップでの生音再生
                 if (window.currentRole === 'student') {
-                    if (window.mySwitchLoop[step]) drum.triggerAttackRelease("C2", "8n", time);
+                    if (window.mySwitchLoop[step]) drumSampler.triggerAttackRelease("C2", "4n", time);
                     if (window.myTraceLoop[step]) {
-                        let sampler = window.currentInstrument === 'piano' ? pianoSampler : window.currentInstrument === 'bell' ? bellSampler : drum;
-                        sampler.triggerAttackRelease(window.myTraceLoop[step], "16n", time);
+                        if (window.currentInstrument === 'piano') pianoSampler.triggerAttackRelease(window.myTraceLoop[step], "16n", time);
+                        else if (window.currentInstrument === 'bell') bellSampler.triggerAttackRelease(window.myTraceLoop[step], "16n", time);
+                        else drumSampler.triggerAttackRelease("C2", "4n", time);
                     }
                 } else if (window.currentRole === 'teacher') {
                     Object.values(window.allStudentsData).forEach(student => {
-                        if (student.switchLoop && student.switchLoop[step]) drum.triggerAttackRelease("C2", "8n", time);
+                        if (student.switchLoop && student.switchLoop[step]) drumSampler.triggerAttackRelease("C2", "4n", time);
                         if (student.traceLoop && student.traceLoop[step]) {
-                            let sampler = student.instrument === 'piano' ? pianoSampler : student.instrument === 'bell' ? bellSampler : drum;
-                            sampler.triggerAttackRelease(student.traceLoop[step], "16n", time);
+                            if (student.instrument === 'piano') pianoSampler.triggerAttackRelease(student.traceLoop[step], "16n", time);
+                            else if (student.instrument === 'bell') bellSampler.triggerAttackRelease(student.traceLoop[step], "16n", time);
+                            else drumSampler.triggerAttackRelease("C2", "4n", time);
                         }
                     });
                 }
@@ -239,8 +257,8 @@
             document.getElementById("mode-teacher").style.display = "flex";
             document.getElementById("global-controls").style.display = "flex";
             document.getElementById("clear-btn").style.display = "none";
-            document.getElementById("submit-btn").style.display = "none"; // 先生画面では非表示
-            document.getElementById("room-title-text").innerHTML = `合奏シアター <span style="color:#4ecca3; font-size:24px; margin-left:15px;">コード: ${code}</span>`;
+            document.getElementById("submit-btn").style.display = "none";
+            document.getElementById("room-title-text").innerHTML = `合奏シアター <span style="color:#4ecca3; font-size:20px; margin-left:10px;">コード: ${code}</span>`;
         };
 
         window.joinStudentRoom = function() {
@@ -250,7 +268,7 @@
             window.roomCode = codeInput; window.studentName = nameInput; window.currentRole = 'student';
             document.getElementById("room-gate-student").style.display = "none";
             document.getElementById("global-controls").style.display = "flex";
-            document.getElementById("room-title-text").innerHTML = `${window.selectedAvatar} ${nameInput}さんの iPad`;
+            document.getElementById("room-title-text").innerHTML = `${window.selectedAvatar} ${nameInput}さんのがっき`;
             showInstrumentSelect();
         };
 
@@ -260,7 +278,7 @@
                 room: window.roomCode, type: 'submit', name: window.studentName,
                 data: { studentName: window.studentName, avatar: window.selectedAvatar, instrument: window.currentInstrument, mode: window.selectedMode, switchLoop: window.mySwitchLoop, traceLoop: window.myTraceLoop }
             }));
-            alert("先生のところに えんそくを 提出したよ！🎉");
+            alert("せんせいにおくったよ！🎉");
             location.reload();
         };
 
@@ -272,7 +290,7 @@
         function showInstrumentSelect() {
             document.querySelectorAll('.mode-container').forEach(c => c.style.display = 'none');
             document.getElementById("mode-teacher").style.display = "none"; 
-            document.getElementById("submit-btn").style.display = "none"; // 楽器選択画面ではまだ隠す
+            document.getElementById("submit-btn").style.display = "none"; 
             document.getElementById("mode-student-inst-select").style.display = "flex"; document.getElementById("clear-btn").style.display = "none";
             document.getElementById("back-nav-btn").innerText = "🔙 もどる";
         }
@@ -282,23 +300,24 @@
             document.getElementById(`bi-${inst}`).classList.add('active');
         };
         
-        // 🛠️ 演奏モードの画面が開いた瞬間、提出ボタンを「block（表示）」に変えるよう完全修正
         window.startPlayMode = function(playMode) {
             window.selectedMode = playMode;
             document.getElementById("mode-student-inst-select").style.display = "none";
             document.getElementById("clear-btn").style.display = "block"; 
-            document.getElementById("submit-btn").style.display = "block"; // 👈 ここで確実にボタンを出現させます！
-            document.getElementById("back-nav-btn").innerText = "🔧 楽器をかえる";
+            document.getElementById("submit-btn").style.display = "block"; 
+            document.getElementById("back-nav-btn").innerText = "🔧 かえる";
             document.getElementById(playMode === 'switch' ? "mode-switch" : "mode-trace").style.display = "block";
             if (playMode === 'trace') setupTraceInput();
         };
         
         window.clearCurrentLoop = function() { window.mySwitchLoop.fill(false); window.myTraceLoop.fill(null); alert("えんそうを ゼロ にもどしたよ！"); };
         window.handleBackOrClose = function() { if (window.currentRole === 'teacher') { if(confirm("合奏を終了しますか？")) { location.reload(); } } else { showInstrumentSelect(); } };
-        window.recordSwitchSound = function(e) { e.preventDefault(); drum.triggerAttackRelease("C2", "8n"); window.mySwitchLoop[activeStep] = true; };
+        window.recordSwitchSound = function(e) { e.preventDefault(); drumSampler.triggerAttackRelease("C2", "4n"); window.mySwitchLoop[activeStep] = true; };
         window.recordTraceSound = function(note) {
-            let sampler = window.currentInstrument === 'piano' ? pianoSampler : window.currentInstrument === 'bell' ? bellSampler : drum;
-            sampler.triggerAttackRelease(note, "16n"); window.myTraceLoop[activeStep] = note;
+            if (window.currentInstrument === 'piano') pianoSampler.triggerAttackRelease(note, "16n");
+            else if (window.currentInstrument === 'bell') bellSampler.triggerAttackRelease(note, "16n");
+            else drumSampler.triggerAttackRelease("C2", "4n");
+            window.myTraceLoop[activeStep] = note;
         };
         function setupTraceInput() {
             const area = document.getElementById("trace-area");
@@ -314,7 +333,7 @@
         function updateTeacherTheaterUI() {
             const stageEl = document.getElementById("theater-stage"); stageEl.innerHTML = "";
             const keys = Object.keys(window.allStudentsData);
-            if(keys.length === 0) { stageEl.innerHTML = `<div style="color:#666; padding:40px; font-size:20px;">子どもたちからの提出をまっています...</div>`; return; }
+            if(keys.length === 0) { stageEl.innerHTML = `<div style="color:#666; padding:40px; font-size:16px;">子どもたちからの提出をまっています...</div>`; return; }
             keys.forEach(k => {
                 const s = window.allStudentsData[k]; const card = document.createElement("div");
                 card.className = "concert-card"; card.id = `card-${s.studentName}`;
